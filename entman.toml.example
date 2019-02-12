@@ -1,0 +1,18 @@
+[server]
+mount_point = "/entman"
+port = 8010
+
+[client]
+endpoint = "http://localhost:8020/castle/lock-state?toggle"
+schedule = [ '"Unlocked"', '"Locked"' ]
+
+[json_history]
+filename = "entman.history"
+
+[ldap]
+url = "ldap://localhost:389"
+base_dn = "dc=example"
+bind_dn = "cn=admin,dc=example"
+bind_password = "12345"
+user_filter = "(accessToken=%t)"
+user_name_attr = "uid"

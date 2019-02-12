@@ -1,0 +1,21 @@
+[package]
+name = "entman"
+version = "0.1.0"
+authors = ["haslersn <sebastian.hasler@gmx.net>"]
+edition = "2018"
+
+[dependencies]
+env_logger = "0.6"
+ldap3 = "0.6"
+log = "0.4"
+reqwest = "0.9"
+rocket = "0.4"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+toml = "0.4"
+
+[dependencies.rocket_contrib]
+version = "0.4"
+default-features = false
+features = ["json"]
