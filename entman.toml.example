@@ -4,7 +4,6 @@ port = 8010
 
 [client]
 endpoint = "http://localhost:8020/castle/lock-state?toggle"
-schedule = [ '"Unlocked"', '"Locked"' ]
 
 [json_history]
 filename = "entman.history"
