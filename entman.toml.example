@@ -3,7 +3,7 @@ mount_point = "/entman"
 port = 8010
 
 [client]
-endpoint = "http://localhost:8020/castle/lock-state?toggle"
+endpoint = "http://localhost:8020/castle/lock?toggle"
 
 [json_history]
 filename = "entman.history"
