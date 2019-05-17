@@ -43,6 +43,7 @@ impl IdentityStore for Ldap {
                 vec![&self.settings.user_name_attr],
             )?
             .success()?;
+        conn.unbind();
         info!("Number of results: {}", results.len());
         Ok(match results.len() {
             0 => AccessResponse {
