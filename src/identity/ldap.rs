@@ -17,6 +17,28 @@ pub struct LdapSettings {
     pub user_name_attr: String,
 }
 
+pub struct LdapConnGuard {
+    conn: LdapConn,
+}
+
+impl LdapConnGuard {
+    pub fn new(url: &str) -> Result<Self> {
+        Ok(Self {
+            conn: LdapConn::new(url)?,
+        })
+    }
+
+    pub fn as_ldap_conn(&self) -> &LdapConn {
+        &self.conn
+    }
+}
+
+impl Drop for LdapConnGuard {
+    fn drop(&mut self) {
+        let _ = self.conn.unbind();
+    }
+}
+
 pub struct Ldap {
     settings: LdapSettings,
 }
@@ -32,7 +54,8 @@ impl IdentityStore for Ldap {
         let token = ldap3::ldap_escape(token);
         let filter = &self.settings.user_filter.replace("%t", &token);
         info!("Attempting to initiate LDAP connection...");
-        let conn = LdapConn::new(&self.settings.url)?;
+        let conn_guard = LdapConnGuard::new(&self.settings.url)?;
+        let conn = conn_guard.as_ldap_conn();
         conn.simple_bind(&self.settings.bind_dn, &self.settings.bind_password)?;
         info!("Reading results...");
         let (results, _) = conn
@@ -43,7 +66,6 @@ impl IdentityStore for Ldap {
                 vec![&self.settings.user_name_attr],
             )?
             .success()?;
-        conn.unbind();
         info!("Number of results: {}", results.len());
         Ok(match results.len() {
             0 => AccessResponse {
