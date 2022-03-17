@@ -1,3 +1,6 @@
+[main]
+identity_store = ldap
+
 [server]
 mount_point = "/entman"
 port = 8010
@@ -15,3 +18,6 @@ bind_dn = "cn=admin,dc=example"
 bind_password = "12345"
 user_filter = "(accessToken=%t)"
 user_name_attr = "uid"
+
+[json_identity]
+file_path = entmanIdenityStore.json
