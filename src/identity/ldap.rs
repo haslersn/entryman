@@ -1,11 +1,9 @@
-use crate::identity::AccessResponse;
-use crate::identity::IdentityStore;
-use crate::identity::Outcome;
-use crate::util::Result;
-use ldap3::LdapConn;
-use ldap3::Scope;
-use ldap3::SearchEntry;
-use std::slice::SliceConcatExt;
+use std::error::Error;
+
+use crate::identity::{AccessResponse, IdentityStore, Outcome};
+use ldap3::{LdapConn, Scope, SearchEntry};
+use log::info;
+use serde_derive::Deserialize;
 
 #[derive(Deserialize)]
 pub struct LdapSettings {
@@ -22,14 +20,14 @@ pub struct LdapConnGuard {
 }
 
 impl LdapConnGuard {
-    pub fn new(url: &str) -> Result<Self> {
+    pub fn new(url: &str) -> Result<Self, Box<dyn Error>> {
         Ok(Self {
             conn: LdapConn::new(url)?,
         })
     }
 
-    pub fn as_ldap_conn(&self) -> &LdapConn {
-        &self.conn
+    pub fn as_mut(&mut self) -> &mut LdapConn {
+        &mut self.conn
     }
 }
 
@@ -50,12 +48,12 @@ impl Ldap {
 }
 
 impl IdentityStore for Ldap {
-    fn access(&mut self, token: &str) -> Result<AccessResponse> {
+    fn access(&mut self, token: &str) -> Result<AccessResponse, Box<dyn Error>> {
         let token = ldap3::ldap_escape(token);
         let filter = &self.settings.user_filter.replace("%t", &token);
         info!("Attempting to initiate LDAP connection...");
-        let conn_guard = LdapConnGuard::new(&self.settings.url)?;
-        let conn = conn_guard.as_ldap_conn();
+        let mut conn_guard = LdapConnGuard::new(&self.settings.url)?;
+        let conn = conn_guard.as_mut();
         conn.simple_bind(&self.settings.bind_dn, &self.settings.bind_password)?;
         info!("Reading results...");
         let (results, _) = conn

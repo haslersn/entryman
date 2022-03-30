@@ -1,8 +1,9 @@
 pub mod json_history;
 
-use crate::identity::AccessResponse;
-use crate::identity::Outcome;
-use crate::util::Result;
+use std::error::Error;
+
+use crate::identity::{AccessResponse, Outcome};
+use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct HistoryEntry {
@@ -12,7 +13,7 @@ pub struct HistoryEntry {
 }
 
 pub trait History: Send {
-    fn insert(&mut self, entry: HistoryEntry) -> Result<()>;
+    fn insert(&mut self, entry: HistoryEntry) -> Result<(), Box<dyn Error>>;
 
     fn query(
         &self,
@@ -22,5 +23,5 @@ pub trait History: Send {
         name: Option<&str>,
         outcome: Option<Outcome>,
         only_latest: bool,
-    ) -> Result<Vec<HistoryEntry>>;
+    ) -> Result<Vec<HistoryEntry>, Box<dyn Error>>;
 }

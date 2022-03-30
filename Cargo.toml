@@ -5,16 +5,17 @@ authors = ["haslersn <sebastian.hasler@gmx.net>"]
 edition = "2018"
 
 [dependencies]
-env_logger = "0.6"
-ldap3 = "0.6"
+async-trait = "0.1"
+env_logger = "0.9"
+ldap3 = "0.10"
 log = "0.4"
-reqwest = "0.9"
-rocket = "0.4"
+reqwest = "0.11"
+rocket = { version = "0.5.0-rc.1", features = ["json"] }
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
-toml = "0.4"
-tokio = "=0.1.11"
+toml = "0.5"
+tokio = { version = "1.17.0" }
 
 [dependencies.rocket_contrib]
 version = "0.4"
