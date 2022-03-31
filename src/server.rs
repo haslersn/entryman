@@ -7,8 +7,8 @@ use rocket::serde::json::Json;
 use rocket::State;
 use serde_derive::Deserialize;
 use std::error::Error;
-use std::sync::Mutex;
 use std::time::SystemTime;
+use tokio::sync::Mutex;
 
 #[async_trait]
 pub trait Callback: Send + Sync {
@@ -41,7 +41,7 @@ pub async fn run(
 }
 
 #[get("/access?<time_min>&<time_max>&<token>&<name>&<outcome>&<only_latest>")]
-pub fn history(
+pub async fn history(
     time_min: Option<u64>,
     time_max: Option<u64>,
     token: Option<String>,
@@ -50,7 +50,7 @@ pub fn history(
     only_latest: Option<bool>,
     state: &State<Mutex<Context>>,
 ) -> Result<Json<Vec<HistoryEntry>>, (Status, String)> {
-    let context = state.inner().lock().unwrap();
+    let context = state.inner().lock().await;
     match context.history.query(
         time_min,
         time_max,
@@ -73,7 +73,7 @@ pub async fn access(
     let response = {
         // `context` of type `MutexGuard` cannot be kept accross `.await`, so we encapsulate it in
         // this block.
-        let context = &mut state.inner().lock().unwrap();
+        let context = &mut state.inner().lock().await;
         let response = context
             .identity_store
             .access(&token)
