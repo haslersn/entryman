@@ -70,31 +70,27 @@ pub async fn access(
     state: &State<Mutex<Context>>,
     callback: &State<Box<dyn Callback>>,
 ) -> Result<Option<String>, (Status, String)> {
-    let response = {
-        // `context` of type `MutexGuard` cannot be kept accross `.await`, so we encapsulate it in
-        // this block.
-        let context = &mut state.inner().lock().await;
-        let response = context
-            .identity_store
-            .access(&token)
-            .await
-            .map_err(|e| (Status::Forbidden, e.to_string()))?;
-        let time = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .map_err(|e| (Status::InternalServerError, e.to_string()))?
-            .as_secs();
-        context
-            .history
-            .insert(HistoryEntry {
-                time,
-                token,
-                response: response.clone(),
-            })
-            .map_err(|e| (Status::ServiceUnavailable, e.to_string()))?;
-        response
-    };
+    let context = &mut state.inner().lock().await;
+    let response = context
+        .identity_store
+        .access(&token)
+        .await
+        .map_err(|e| (Status::Forbidden, e.to_string()))?;
+    let time = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .map_err(|e| (Status::InternalServerError, e.to_string()))?
+        .as_secs();
     let name = response.name.clone();
     let outcome = response.outcome;
+    context
+        .history
+        .insert(HistoryEntry {
+            time,
+            token,
+            response,
+        })
+        .map_err(|e| (Status::ServiceUnavailable, e.to_string()))?;
+    drop(context);
     if outcome == Outcome::Success {
         callback
             .inner()
