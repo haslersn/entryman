@@ -1,13 +1,9 @@
-use crate::history::History;
-use crate::history::HistoryEntry;
+use crate::history::{History, HistoryEntry};
 use crate::identity::Outcome;
-use crate::util::Result;
-use std::fs::File;
-use std::fs::OpenOptions;
-use std::io::BufRead;
-use std::io::BufReader;
-use std::io::BufWriter;
-use std::io::Write;
+use serde_derive::Deserialize;
+use std::error::Error;
+use std::fs::{File, OpenOptions};
+use std::io::{BufRead, BufReader, BufWriter, Write};
 
 #[derive(Deserialize)]
 pub struct JsonHistorySettings {
@@ -20,7 +16,7 @@ pub struct JsonHistory {
 }
 
 impl JsonHistory {
-    pub fn new(settings: JsonHistorySettings) -> Result<Self> {
+    pub fn new(settings: JsonHistorySettings) -> Result<Self, Box<dyn Error>> {
         let file = OpenOptions::new()
             .read(true)
             .write(true)
@@ -32,7 +28,7 @@ impl JsonHistory {
 }
 
 impl History for JsonHistory {
-    fn insert(&mut self, entry: HistoryEntry) -> Result<()> {
+    fn insert(&mut self, entry: HistoryEntry) -> Result<(), Box<dyn Error>> {
         history_append(&mut self.file, &entry)?;
         self.history.push(entry);
         Ok(())
@@ -46,7 +42,7 @@ impl History for JsonHistory {
         name: Option<&str>,
         outcome: Option<Outcome>,
         only_latest: bool,
-    ) -> Result<Vec<HistoryEntry>> {
+    ) -> Result<Vec<HistoryEntry>, Box<dyn Error>> {
         let iter = self.history.iter().filter(|history_entry| {
             if time_min.unwrap_or(0) > history_entry.time {
                 return false;
@@ -76,14 +72,14 @@ impl History for JsonHistory {
     }
 }
 
-fn history_append(file: &mut File, entry: &HistoryEntry) -> Result<()> {
+fn history_append(file: &mut File, entry: &HistoryEntry) -> Result<(), Box<dyn Error>> {
     let mut writer = BufWriter::new(file);
     serde_json::to_writer(&mut writer, entry)?;
     writer.write("\n".as_bytes())?;
     Ok(())
 }
 
-fn history_read(file: &File) -> Result<Vec<HistoryEntry>> {
+fn history_read(file: &File) -> Result<Vec<HistoryEntry>, Box<dyn Error>> {
     BufReader::new(file)
         .lines()
         .map(|line| Ok(serde_json::from_str(&(line?))?))

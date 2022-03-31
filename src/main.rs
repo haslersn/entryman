@@ -1,40 +1,24 @@
-#![feature(
-    proc_macro_hygiene,
-    decl_macro,
-    slice_concat_ext,
-    unboxed_closures,
-    fn_traits
-)]
-
-#[macro_use]
-extern crate log;
 #[macro_use]
 extern crate rocket;
-#[macro_use]
-extern crate serde_derive;
 
 pub mod client;
 pub mod history;
 pub mod identity;
 pub mod server;
-pub mod util;
 
-use client::Client;
-use client::ClientSettings;
-use env_logger::Builder;
-use env_logger::Env;
-use history::json_history::JsonHistory;
-use history::json_history::JsonHistorySettings;
-use identity::ldap::Ldap;
-use identity::ldap::LdapSettings;
-use server::Callback;
-use server::Context;
-use server::ServerSettings;
-use util::Result;
+use std::error::Error;
 
+use client::{Client, ClientSettings};
+use env_logger::{Builder, Env};
+use history::json_history::{JsonHistory, JsonHistorySettings};
+use identity::ldap::{Ldap, LdapSettings};
+use serde_derive::Deserialize;
+use server::{Callback, Context, ServerSettings};
+
+#[async_trait]
 impl Callback for Client {
-    fn call(&self) -> Result {
-        self.access()
+    async fn call(&self) -> Result<(), Box<dyn Error>> {
+        self.access().await
     }
 }
 
@@ -46,7 +30,8 @@ struct Config {
     client: ClientSettings,
 }
 
-fn main() -> Result {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
     // initialize logger w/ log level "info"
     Builder::from_env(Env::new().default_filter_or("info")).init();
 
@@ -57,11 +42,10 @@ fn main() -> Result {
         history: Box::new(JsonHistory::new(conf.json_history)?),
     };
     let client = Box::new(Client::new(conf.client));
-    server::run(conf.server, context, client);
-    Ok(())
+    server::run(conf.server, context, client).await
 }
 
-fn read_config() -> Result<Config> {
+fn read_config() -> Result<Config, Box<dyn Error>> {
     let conf_str = std::fs::read_to_string("entman.toml")?;
     toml::from_str(&conf_str).map_err(From::from)
 }

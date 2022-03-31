@@ -1,11 +1,9 @@
-use crate::identity::AccessResponse;
-use crate::identity::IdentityStore;
-use crate::identity::Outcome;
-use crate::util::Result;
-use ldap3::LdapConn;
-use ldap3::Scope;
-use ldap3::SearchEntry;
-use std::slice::SliceConcatExt;
+use std::error::Error;
+
+use crate::identity::{AccessResponse, IdentityStore, Outcome};
+use ldap3::{LdapConnAsync, Scope, SearchEntry};
+use log::info;
+use serde_derive::Deserialize;
 
 #[derive(Deserialize)]
 pub struct LdapSettings {
@@ -18,24 +16,24 @@ pub struct LdapSettings {
 }
 
 pub struct LdapConnGuard {
-    conn: LdapConn,
+    ldap: ldap3::Ldap,
 }
 
 impl LdapConnGuard {
-    pub fn new(url: &str) -> Result<Self> {
-        Ok(Self {
-            conn: LdapConn::new(url)?,
-        })
+    pub async fn new(url: &str) -> Result<Self, Box<dyn Error>> {
+        let (conn, ldap) = LdapConnAsync::new(url).await?;
+        ldap3::drive!(conn);
+        Ok(Self { ldap })
     }
 
-    pub fn as_ldap_conn(&self) -> &LdapConn {
-        &self.conn
+    pub fn as_mut(&mut self) -> &mut ldap3::Ldap {
+        &mut self.ldap
     }
 }
 
 impl Drop for LdapConnGuard {
     fn drop(&mut self) {
-        let _ = self.conn.unbind();
+        let _ = self.ldap.unbind();
     }
 }
 
@@ -49,22 +47,25 @@ impl Ldap {
     }
 }
 
+#[async_trait]
 impl IdentityStore for Ldap {
-    fn access(&mut self, token: &str) -> Result<AccessResponse> {
+    async fn access(&mut self, token: &str) -> Result<AccessResponse, Box<dyn Error>> {
         let token = ldap3::ldap_escape(token);
         let filter = &self.settings.user_filter.replace("%t", &token);
         info!("Attempting to initiate LDAP connection...");
-        let conn_guard = LdapConnGuard::new(&self.settings.url)?;
-        let conn = conn_guard.as_ldap_conn();
-        conn.simple_bind(&self.settings.bind_dn, &self.settings.bind_password)?;
+        let mut ldap_guard = LdapConnGuard::new(&self.settings.url).await?;
+        let ldap = ldap_guard.as_mut();
+        ldap.simple_bind(&self.settings.bind_dn, &self.settings.bind_password)
+            .await?;
         info!("Reading results...");
-        let (results, _) = conn
+        let (results, _) = ldap
             .search(
                 &self.settings.base_dn,
                 Scope::Subtree,
                 &filter,
                 vec![&self.settings.user_name_attr],
-            )?
+            )
+            .await?
             .success()?;
         info!("Number of results: {}", results.len());
         Ok(match results.len() {

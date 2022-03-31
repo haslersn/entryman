@@ -1,8 +1,10 @@
 pub mod ldap;
 
-use crate::util::Result;
+use std::error::Error;
 
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
+use serde_derive::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Clone, Copy, FromFormField, PartialEq)]
 pub enum Outcome {
     Success,
     Revoked,
@@ -15,6 +17,7 @@ pub struct AccessResponse {
     pub name: Option<String>,
 }
 
+#[async_trait]
 pub trait IdentityStore: Send {
-    fn access(&mut self, token: &str) -> Result<AccessResponse>;
+    async fn access(&mut self, token: &str) -> Result<AccessResponse, Box<dyn Error>>;
 }

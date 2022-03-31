@@ -1,4 +1,6 @@
-use crate::util::Result;
+use std::error::Error;
+
+use serde_derive::Deserialize;
 
 #[derive(Deserialize)]
 pub struct ClientSettings {
@@ -18,9 +20,9 @@ impl Client {
         }
     }
 
-    pub fn access(&self) -> Result {
+    pub async fn access(&self) -> Result<(), Box<dyn Error>> {
         let url = &self.settings.endpoint;
-        self.rest_client.post(url).send()?;
+        self.rest_client.post(url).send().await?;
         Ok(())
     }
 }
