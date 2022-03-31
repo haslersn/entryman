@@ -17,6 +17,7 @@ pub struct AccessResponse {
     pub name: Option<String>,
 }
 
+#[async_trait]
 pub trait IdentityStore: Send {
-    fn access(&mut self, token: &str) -> Result<AccessResponse, Box<dyn Error>>;
+    async fn access(&mut self, token: &str) -> Result<AccessResponse, Box<dyn Error>>;
 }

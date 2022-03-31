@@ -77,6 +77,7 @@ pub async fn access(
         let response = context
             .identity_store
             .access(&token)
+            .await
             .map_err(|e| (Status::Forbidden, e.to_string()))?;
         let time = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
