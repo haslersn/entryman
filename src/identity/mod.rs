@@ -1,5 +1,5 @@
-pub mod ldap;
 pub mod json;
+pub mod ldap;
 
 use std::error::Error;
 

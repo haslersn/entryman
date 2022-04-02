@@ -11,8 +11,8 @@ use std::error::Error;
 use client::{Client, ClientSettings};
 use env_logger::{Builder, Env};
 use history::json_history::{JsonHistory, JsonHistorySettings};
-use identity::ldap::{Ldap, LdapIdentitySettings};
 use identity::json::{Json, JsonIdentitySettings};
+use identity::ldap::{Ldap, LdapIdentitySettings};
 use serde_derive::Deserialize;
 use server::{Callback, Context, ServerSettings};
 #[async_trait]
@@ -25,8 +25,8 @@ impl Callback for Client {
 #[derive(Deserialize)]
 #[serde(tag = "type")]
 enum IdentitySettings {
-  Ldap(LdapIdentitySettings),
-  Json(JsonIdentitySettings),
+    Ldap(LdapIdentitySettings),
+    Json(JsonIdentitySettings),
 }
 
 #[derive(Deserialize)]
