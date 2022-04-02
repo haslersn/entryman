@@ -6,7 +6,7 @@ use log::info;
 use serde_derive::Deserialize;
 
 #[derive(Deserialize)]
-pub struct LdapSettings {
+pub struct LdapIdentitySettings {
     pub url: String,
     pub base_dn: String,
     pub bind_dn: String,
@@ -38,11 +38,11 @@ impl Drop for LdapConnGuard {
 }
 
 pub struct Ldap {
-    settings: LdapSettings,
+    settings: LdapIdentitySettings,
 }
 
 impl Ldap {
-    pub fn new(settings: LdapSettings) -> Self {
+    pub fn new(settings: LdapIdentitySettings) -> Self {
         Self { settings }
     }
 }

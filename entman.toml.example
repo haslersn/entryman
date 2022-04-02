@@ -8,10 +8,14 @@ endpoint = "http://localhost:8020/castle/lock?toggle"
 [json_history]
 filename = "entman.history"
 
-[ldap]
+[identity]
+type = "Ldap"
 url = "ldap://localhost:389"
 base_dn = "dc=example"
 bind_dn = "cn=admin,dc=example"
 bind_password = "12345"
 user_filter = "(accessToken=%t)"
 user_name_attr = "uid"
+
+# type = "Json"
+# filename = "entmanIdenityStore.json"

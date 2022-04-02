@@ -1,7 +1,11 @@
 # entman
 
-LDAP-authorized access to an HTTP endpoint.
+Check access to an HTTP endpoint using an identity store.
 (Currently only `POST` requests are supported and the response is dropped.)
+Supported identity stores are:
+
+- LDAP
+- JSON file
 
 ## Build
 
@@ -56,7 +60,16 @@ This can be an absolute or relative path.
 A relative path is relative to the working directory where entman is executed.
 See also [#log](#log).
 
-### [ldap] section
+### [identity] section
+
+#### `type =`
+
+Which kind of identity store to use.
+Possible values are `"Ldap"` and `"Json"`.
+
+### [identity] section with `type = "Ldap"`
+
+Configuration for the LDAP identity store.
 
 #### `url =`
 
@@ -79,6 +92,8 @@ Example: `"12345"`
 The filter used when querying the LDAP server.
 Hereby `%t` is replaced by the access token.
 Example: `"(accessToken=%t)"`
+If that query produces exactly one match, then the access is granted.
+If the query has more than one match, it is assumed that the access was revoked.
 
 #### `user_name_attr =`
 
@@ -86,6 +101,23 @@ In the LDAP response, the name of the attribute that contains the username
 assigned to the access token.
 This is only used so as to log the username to the [log](#log).
 Example: `"uid"`
+
+### [identity] section with `type = "Json"`
+
+Configuration for the JSON identity store.
+
+#### `filename =`
+
+The path to the file in [JSON Lines](https://jsonlines.org) format containing the identity data.
+Each line of the file must contain a JSON object of the following form:
+
+```json
+{ "username": "name", "token": "accessToken", "access": true }
+```
+
+Access is granted if the access attribute of the first JSON object in the file matching the token in question is set to true.
+The username attribute is then used for the [log](#log).
+If the access attribute of the first matching JSON object is `false`, it is assumed the access was revoked.
 
 ## HTTP endpoints
 
@@ -123,10 +155,8 @@ $ curl -X POST http://localhost:8010/entman/access?token=foo
 ```
 
 Such a request performs an access using a provided token.
-An LDAP query is performed using the configured `user_filter`
-where `%t` is replaced by the token.
-If that query produces exactly one match, then the access is considered to be
-successful and entman performs a `POST` request to the configured
+Then, a query of the identity provider is performed with the given token.
+If that query is successful and entman performs a `POST` request to the configured
 `[client] endpoint`.
 The response to that `POST` request is dropped.
 
@@ -151,7 +181,7 @@ Hereby:
         An attempt to access the `[client] endpoint` has subsequently been made.
         However, this does not tell anything about whether that attempt itself was
         successful.
-      * `"Revoked"` means that the token was matched more than once.
+      * `"Revoked"` means that the token was revoked.
         In that case `"name"` is `null`.
   * `"name"` is, in case of a successful outcome, the name of the user whose token
   was matched.
