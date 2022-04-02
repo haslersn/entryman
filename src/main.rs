@@ -11,7 +11,7 @@ use std::error::Error;
 use client::{Client, ClientSettings};
 use env_logger::{Builder, Env};
 use history::json_history::{JsonHistory, JsonHistorySettings};
-use identity::ldap::{Ldap, LdapSettings};
+use identity::ldap::{Ldap, LdapIdentitySettings};
 use identity::json::{Json, JsonIdentitySettings};
 use serde_derive::Deserialize;
 use server::{Callback, Context, ServerSettings};
@@ -23,21 +23,15 @@ impl Callback for Client {
 }
 
 #[derive(Deserialize)]
-struct MainSettings {
-    identity_store: IdentityStoreType
-}
-
-#[derive(Deserialize)]
-enum IdentityStoreType {
-  Ldap,
-  Json,
+#[serde(tag = "type")]
+enum IdentitySettings {
+  Ldap(LdapIdentitySettings),
+  Json(JsonIdentitySettings),
 }
 
 #[derive(Deserialize)]
 struct Config {
-    main: MainSettings,
-    ldap: LdapSettings,
-    json_identity: JsonIdentitySettings,
+    identity: IdentitySettings,
     json_history: JsonHistorySettings,
     server: ServerSettings,
     client: ClientSettings,
@@ -51,9 +45,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // configure and start web server
     let conf = read_config()?;
     let context = Context {
-        identity_store: match conf.main.identity_store {
-            IdentityStoreType::Ldap => Box::new(Ldap::new(conf.ldap)),
-            IdentityStoreType::Json => Box::new(Json::new(conf.json_identity)),
+        identity_store: match conf.identity {
+            IdentitySettings::Ldap(ldap_settings) => Box::new(Ldap::new(ldap_settings)),
+            IdentitySettings::Json(json_settings) => Box::new(Json::new(json_settings)),
         },
         history: Box::new(JsonHistory::new(conf.json_history)?),
     };

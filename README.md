@@ -34,12 +34,6 @@ In the working directory where entman is executed, there must be a
 `entman.toml` configuration file.
 A good start is to copy the `entman.toml.example` from this repository.
 
-### [main] section
-
-#### `identity_store =`
-
-Which kind of identity store to use. Possible values are `ldap` and `json`.
-
 ### [server] section
 
 #### `mount_point =`
@@ -66,9 +60,16 @@ This can be an absolute or relative path.
 A relative path is relative to the working directory where entman is executed.
 See also [#log](#log).
 
-### [ldap] section
+### [identity] section
 
-Configuration for the `ldap` identity store
+#### `type =`
+
+Which kind of identity store to use.
+Possible values are `"Ldap"` and `"Json"`.
+
+### [identity] section with `type = "Ldap"`
+
+Configuration for the LDAP identity store.
 
 #### `url =`
 
@@ -100,9 +101,10 @@ In the LDAP response, the name of the attribute that contains the username
 assigned to the access token.
 This is only used so as to log the username to the [log](#log).
 Example: `"uid"`
-### [json_identity] section
 
-Configuration for the `json` identity store
+### [identity] section with `type = "Json"`
+
+Configuration for the JSON identity store.
 
 #### `file_path =`
 
