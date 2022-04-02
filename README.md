@@ -109,15 +109,15 @@ Configuration for the JSON identity store.
 #### `filename =`
 
 The path to the file in [JSON Lines](https://jsonlines.org) format containing the identity data.
-Each line of the file must contain a JSON of the following form:
+Each line of the file must contain a JSON object of the following form:
 
 ```json
 { "username": "name", "token": "accessToken", "access": true }
 ```
 
-Access is granted if the access attribute of the first JSON in the file matching the token in question is set to true.
+Access is granted if the access attribute of the first JSON object in the file matching the token in question is set to true.
 The username attribute is then used for the [log](#log).
-If the access attribute of the first matching JSON is `false`, it is assumed the access was revoked.
+If the access attribute of the first matching JSON object is `false`, it is assumed the access was revoked.
 
 ## HTTP endpoints
 
