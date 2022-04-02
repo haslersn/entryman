@@ -1,9 +1,9 @@
 use std::error::Error;
+use std::fs::File;
+use std::path::Path;
 
 use crate::identity::{AccessResponse, IdentityStore, Outcome};
 use serde_derive::Deserialize;
-use std::fs::File;
-use std::path::Path;
 
 #[derive(Deserialize)]
 pub struct JsonIdentitySettings {

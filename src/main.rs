@@ -15,6 +15,7 @@ use identity::json::{Json, JsonIdentitySettings};
 use identity::ldap::{Ldap, LdapIdentitySettings};
 use serde_derive::Deserialize;
 use server::{Callback, Context, ServerSettings};
+
 #[async_trait]
 impl Callback for Client {
     async fn call(&self) -> Result<(), Box<dyn Error>> {
