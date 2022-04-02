@@ -11,26 +11,25 @@ pub struct JsonHistorySettings {
 }
 
 pub struct JsonHistory {
+    settings: JsonHistorySettings,
     file: File,
-    history: Vec<HistoryEntry>,
 }
 
 impl JsonHistory {
     pub fn new(settings: JsonHistorySettings) -> Result<Self, Box<dyn Error>> {
         let file = OpenOptions::new()
-            .read(true)
             .write(true)
             .create(true)
             .open(&settings.filename)?;
-        let history = history_read(&file)?;
-        Ok(Self { file, history })
+        Ok(Self { settings, file })
     }
 }
 
 impl History for JsonHistory {
     fn insert(&mut self, entry: HistoryEntry) -> Result<(), Box<dyn Error>> {
-        history_append(&mut self.file, &entry)?;
-        self.history.push(entry);
+        let mut writer = BufWriter::new(&mut self.file);
+        serde_json::to_writer(&mut writer, &entry)?;
+        writer.write("\n".as_bytes())?;
         Ok(())
     }
 
@@ -43,45 +42,56 @@ impl History for JsonHistory {
         outcome: Option<Outcome>,
         only_latest: bool,
     ) -> Result<Vec<HistoryEntry>, Box<dyn Error>> {
-        let iter = self.history.iter().filter(|history_entry| {
-            if time_min.unwrap_or(0) > history_entry.time {
-                return false;
+        let reader = BufReader::new(
+            OpenOptions::new()
+                .read(true)
+                .open(&self.settings.filename)?,
+        );
+        let iter = reader.lines().enumerate().filter_map(|(n, line)| {
+            let location = format!("{}:{}", self.settings.filename, n + 1);
+            match line {
+                Err(e) => {
+                    warn!("Failed to read history entry at {}: {:?}", location, e);
+                    None
+                }
+                Ok(line) => match serde_json::from_str::<HistoryEntry>(&line) {
+                    Err(e) => {
+                        warn!(
+                            "Failed to deserialize history entry at {}: {:?}",
+                            location, e
+                        );
+                        None
+                    }
+                    Ok(history_entry) => {
+                        if time_min.unwrap_or(0) > history_entry.time {
+                            return None;
+                        }
+                        if time_max.unwrap_or(u64::max_value()) < history_entry.time {
+                            return None;
+                        }
+                        if token.map_or(false, |v| v != history_entry.token) {
+                            return None;
+                        }
+                        if outcome
+                            .as_ref()
+                            .map_or(false, |v| *v != history_entry.response.outcome)
+                        {
+                            return None;
+                        }
+                        if name.is_some()
+                            && name != history_entry.response.name.as_ref().map(|x| &**x)
+                        {
+                            return None;
+                        }
+                        Some(history_entry)
+                    }
+                },
             }
-            if time_max.unwrap_or(u64::max_value()) < history_entry.time {
-                return false;
-            }
-            if token.map_or(false, |v| v != history_entry.token) {
-                return false;
-            }
-            if outcome
-                .as_ref()
-                .map_or(false, |v| *v != history_entry.response.outcome)
-            {
-                return false;
-            }
-            if name.is_some() && name != history_entry.response.name.as_ref().map(|x| &**x) {
-                return false;
-            }
-            true
         });
         Ok(if only_latest {
-            iter.rev().take(1).map(|x| x.clone()).collect()
+            iter.last().into_iter().collect()
         } else {
-            iter.map(|x| x.clone()).collect()
+            iter.collect()
         })
     }
-}
-
-fn history_append(file: &mut File, entry: &HistoryEntry) -> Result<(), Box<dyn Error>> {
-    let mut writer = BufWriter::new(file);
-    serde_json::to_writer(&mut writer, entry)?;
-    writer.write("\n".as_bytes())?;
-    Ok(())
-}
-
-fn history_read(file: &File) -> Result<Vec<HistoryEntry>, Box<dyn Error>> {
-    BufReader::new(file)
-        .lines()
-        .map(|line| Ok(serde_json::from_str(&(line?))?))
-        .collect()
 }
