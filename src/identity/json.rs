@@ -1,13 +1,13 @@
 use std::error::Error;
-use std::fs::File;
-use std::path::Path;
+use std::fs::OpenOptions;
+use std::io::{BufRead, BufReader};
 
 use crate::identity::{AccessResponse, IdentityStore, Outcome};
 use serde_derive::Deserialize;
 
 #[derive(Deserialize)]
 pub struct JsonIdentitySettings {
-    pub file_path: String,
+    pub filename: String,
 }
 
 #[derive(Deserialize)]
@@ -30,20 +30,35 @@ impl Json {
 #[async_trait]
 impl IdentityStore for Json {
     async fn access(&mut self, token: &str) -> Result<AccessResponse, Box<dyn Error>> {
-        let json_file_path = Path::new(&self.settings.file_path);
-        let file = File::open(json_file_path)?;
-        let users: Vec<User> = serde_json::from_reader(file)?;
+        let reader = BufReader::new(
+            OpenOptions::new()
+                .read(true)
+                .open(&self.settings.filename)?,
+        );
 
-        for user in users {
-            if user.token == token {
-                return Ok(AccessResponse {
-                    outcome: if user.access {
-                        Outcome::Success
-                    } else {
-                        Outcome::Revoked
-                    },
-                    name: Some(user.username),
-                });
+        for (n, line) in reader.lines().enumerate() {
+            let location = format!("{}:{}", self.settings.filename, n + 1);
+            match line {
+                Err(e) => {
+                    warn!("Failed to read user at {}: {:?}", location, e);
+                }
+                Ok(line) => match serde_json::from_str::<User>(&line) {
+                    Err(e) => {
+                        warn!("Failed to deserialize user at {}: {:?}", location, e);
+                    }
+                    Ok(user) => {
+                        if user.token == token {
+                            return Ok(AccessResponse {
+                                outcome: if user.access {
+                                    Outcome::Success
+                                } else {
+                                    Outcome::Revoked
+                                },
+                                name: Some(user.username),
+                            });
+                        }
+                    }
+                },
             }
         }
 
