@@ -1,5 +1,5 @@
 use crate::history::{History, HistoryEntry};
-use crate::identity::{IdentityStore, Outcome};
+use crate::identity::{AccessResponse, IdentityStore, Outcome};
 use async_trait::async_trait;
 use rocket::config::Config;
 use rocket::http::Status;
@@ -69,34 +69,35 @@ pub async fn access(
     token: String,
     state: &State<Mutex<Context>>,
     callback: &State<Box<dyn Callback>>,
-) -> Result<Option<String>, (Status, String)> {
+) -> Result<(Status, Json<AccessResponse>), (Status, String)> {
     let context = &mut state.inner().lock().await;
     let response = context
         .identity_store
         .access(&token)
         .await
-        .map_err(|e| (Status::Forbidden, e.to_string()))?;
+        .map_err(|e| (Status::InternalServerError, e.to_string()))?;
     let time = SystemTime::now()
         .duration_since(SystemTime::UNIX_EPOCH)
         .map_err(|e| (Status::InternalServerError, e.to_string()))?
         .as_secs();
-    let name = response.name.clone();
-    let outcome = response.outcome;
     context
         .history
         .insert(HistoryEntry {
             time,
             token,
-            response,
+            response: response.clone(),
         })
         .map_err(|e| (Status::ServiceUnavailable, e.to_string()))?;
     drop(context);
-    if outcome == Outcome::Success {
+    let status = if response.outcome == Outcome::Success {
         callback
             .inner()
             .call()
             .await
             .map_err(|e| (Status::BadGateway, e.to_string()))?;
-    }
-    Ok(name)
+        Status::Ok
+    } else {
+        Status::Forbidden
+    };
+    Ok((status, Json(response)))
 }
