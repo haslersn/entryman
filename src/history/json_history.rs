@@ -18,7 +18,7 @@ pub struct JsonHistory {
 impl JsonHistory {
     pub fn new(settings: JsonHistorySettings) -> Result<Self, Box<dyn Error>> {
         let file = OpenOptions::new()
-            .write(true)
+            .append(true)
             .create(true)
             .open(&settings.filename)?;
         Ok(Self { settings, file })
