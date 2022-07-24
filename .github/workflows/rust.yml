@@ -23,5 +23,8 @@ jobs:
           override: true
     - name: Build
       run: cargo build --verbose --release
-    
+    - uses: actions/upload-artifact@v3
+      with:
+        name: build-result
+        path: target/release/entman/
 
