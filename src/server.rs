@@ -31,13 +31,13 @@ pub async fn run(
     context: Context,
     callback: Box<dyn Callback>,
 ) -> Result<(), Box<dyn Error>> {
-    rocket::custom(Config::figment().merge(("port", settings.port)))
+    let _ = rocket::custom(Config::figment().merge(("port", settings.port)))
         .mount(&settings.mount_point, routes![history, access])
         .manage(Mutex::new(context))
         .manage(callback)
         .launch()
-        .await
-        .map_err(Into::into)
+        .await?;
+    Ok(())
 }
 
 #[get("/access?<time_min>&<time_max>&<token>&<name>&<outcome>&<only_latest>")]
