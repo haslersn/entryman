@@ -1,0 +1,55 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install latest nightly rust
+      uses: actions-rs/toolchain@v1
+      with:
+          toolchain: nightly
+          override: true
+    - name: Build
+      run: cargo build --verbose --release
+    - uses: actions/upload-artifact@v3
+      with:
+        name: build-result
+        path: target/release/entman/
+  build-aarch64: 
+    # Also called amd64
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install apt dependencies
+      run: |
+        sudo add-apt-repository universe &&
+        sudo dpkg --add-architecture amd64 &&
+        sudo apt update &&
+        sudo apt install gcc g++ gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu libssl-dev:amd64
+    - name: Install latest nightly rust
+      uses: actions-rs/toolchain@v1
+      with:
+          toolchain: nightly
+          override: true
+          target: aarch64-unknown-linux-gnu
+    - name: Build
+      run: cargo build --verbose --release --target aarch64-unknown-linux-gnu
+      env:
+        # according to the doc https://docs.rs/openssl/0.10.36/openssl/#manual
+        OPENSSL_LIB_DIR: /usr/lib/x86_64-linux-gnu/
+        OPENSSL_INCLUDE_DIR: /usr/include/x86_64-linux-gnu/
+    - uses: actions/upload-artifact@v3
+      with:
+        name: build-result-aarch64
+        path: target/release/entman/
+
