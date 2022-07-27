@@ -32,9 +32,10 @@ jobs:
     - uses: actions/checkout@v3
     - name: Install apt dependencies
       run: |
+        set +x &&
         sudo apt update &&
         sudo apt upgrade &&
-        sudo apt install gcc-multilib g++-multilib gcc-aarch64-linux-gnu &&
+        sudo apt install gcc-multilib g++-multilib gcc-aarch64-linux-gnu gcc-9-aarch64-linux-gnu &&
         sudo add-apt-repository universe &&
         sudo dpkg --add-architecture amd64 &&
         sudo apt install libssl-dev:amd64
