@@ -35,7 +35,7 @@ jobs:
         sudo add-apt-repository universe &&
         sudo dpkg --add-architecture amd64 &&
         sudo apt update &&
-        sudo apt install gcc-multilib g++-multilib libssl-dev:amd64
+        sudo apt install gcc-multilib g++-multilib libssl-dev:amd64 gcc-aarch64-linux-gnu
     - name: Install latest nightly rust
       uses: actions-rs/toolchain@v1
       with:
