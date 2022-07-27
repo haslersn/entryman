@@ -39,6 +39,7 @@ jobs:
         # according to the doc https://docs.rs/openssl/0.10.36/openssl/#manual
         export OPENSSL_LIB_DIR=/usr/lib/amd64-linux-gnu/ &&
         export OPENSSL_INCLUDE_DIR=/usr/include/openssl/
+        export PKG_CONFIG_SYSROOT_DIR=/
     - name: Install latest nightly rust
       uses: actions-rs/toolchain@v1
       with:
