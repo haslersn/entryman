@@ -35,7 +35,7 @@ jobs:
         sudo add-apt-repository universe &&
         sudo dpkg --add-architecture amd64 &&
         sudo apt update &&
-        sudo apt install gcc-multilib g++-multilib libssl-dev:amd64
+        sudo apt install gcc g++ gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu libssl-dev:amd64
     - name: Install latest nightly rust
       uses: actions-rs/toolchain@v1
       with:
@@ -47,7 +47,7 @@ jobs:
       env:
         # according to the doc https://docs.rs/openssl/0.10.36/openssl/#manual
         OPENSSL_LIB_DIR: /usr/lib/x86_64-linux-gnu/
-        OPENSSL_INCLUDE_DIR: /usr/include/openssl/
+        OPENSSL_INCLUDE_DIR: /usr/include/x86_64-linux-gnu/
     - uses: actions/upload-artifact@v3
       with:
         name: build-result-aarch64
