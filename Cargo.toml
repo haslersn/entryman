@@ -15,7 +15,7 @@ serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 toml = "0.5"
-tokio = { version = "1.17.0" }
+tokio = { version = "1.20.3" }
 
 [dependencies.rocket_contrib]
 version = "0.4"
